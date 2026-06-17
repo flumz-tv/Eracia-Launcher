@@ -1,7 +1,7 @@
 {
     "name": "Eracia-Launcher",
     "preductname": "Eracia Launcher",
-    "version": "1.0.4",
+    "version": "1.1.0",
     "description": "Launcher Mincraft pour le serveur Eracia",
     "main": "src/app.js",
     "author": {
