@@ -249,17 +249,94 @@
     align-items: center;
 }
 
+/*.play-instance {*/
+/*    display: flex;*/
+/*    justify-content: space-between;*/
+/*    align-items: center;*/
+/*    position: relative;*/
+/*    border: solid 3px var(--element-color);*/
+/*    border-radius: 15px;*/
+/*    height: 3.2rem;*/
+/*    padding-right: 1.9rem;*/
+/*}*/
+
+
+/*.play-btn {*/
+/*    border: none;*/
+/*    border-radius: 10px;*/
+/*    background: none;*/
+/*    color: var(--color);*/
+/*    font-size: 2rem;*/
+/*    font-weight: bolder;*/
+/*    padding: 0 1.5rem;*/
+/*    pointer-events: none;*/
+/*}*/
+
+
+
+/*.instance-select {*/
+/*    display: flex;*/
+/*    align-items: center;*/
+/*    position: absolute;*/
+/*    right: -3;*/
+/*    top: -2;*/
+/*    color: var(--element-color);*/
+/*    font-size: 1rem;*/
+/*    height: calc(100% - 1px);*/
+/*    border: solid 3px var(--element-color);*/
+/*    text-align: center;*/
+/*    border-radius: 15px;*/
+/*    padding: 0 0.5rem;*/
+/*    cursor: pointer;*/
+/*}*/
+
+@property --angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+}
+
+/* Le conteneur principal avec l'effet snake */
 .play-instance {
     display: flex;
     justify-content: space-between;
     align-items: center;
     position: relative;
-    border: solid 3px var(--element-color);
-    border-radius: 15px;
     height: 3.2rem;
-    padding-right: 1.9rem;
+    border-radius: 15px;
+
+    /* On crée une bordure transparente de 3px qui servira de "rail" au serpent */
+    border: 3px solid transparent;
+
+    /* L'astuce des doubles fonds (Background Clip) :
+       - Le 1er (padding-box) est le fond uni qui cache l'intérieur (prend en compte ton mode sombre/clair).
+       - Le 2ème (border-box) est le dégradé visible uniquement sous la bordure. */
+    background:
+            linear-gradient(var(--background), var(--background)) padding-box,
+            repeating-conic-gradient(
+                    from var(--angle),
+                    transparent 0%,
+                    transparent 15%, /* Crée un petit espace vide entre la tête du 1er et la queue du 2ème */
+                    color-mix(in srgb, var(--element-color) 40%, transparent) 35%,
+                    var(--element-color) 48%,
+                    #ffffff 50% /* La tête du serpent s'arrête exactement à la moitié du cercle (180°) */
+            ) border-box;
+
+    /* Animation du serpent */
+    animation: spin-snake 2.5s linear infinite;
+
+    /* Effet de lueur externe (Neon Glow) adaptatif */
+    box-shadow: 0 0 15px color-mix(in srgb, var(--element-color) 40%, transparent);
 }
 
+/* Animation fluide de 0 à 360 degrés */
+@keyframes spin-snake {
+    to {
+        --angle: 360deg;
+    }
+}
+
+/* Le texte du bouton */
 .play-btn {
     border: none;
     border-radius: 10px;
@@ -269,23 +346,26 @@
     font-weight: bolder;
     padding: 0 1.5rem;
     pointer-events: none;
+
+    /* Optionnel : Légère lueur sur le texte pour renforcer le côté néon */
+    text-shadow: 0 0 8px color-mix(in srgb, var(--element-color) 40%, transparent);
 }
 
+/* La section droite avec la flèche */
 .instance-select {
     display: flex;
     align-items: center;
-    position: absolute;
-    right: -3;
-    top: -2;
+    justify-content: center;
+    height: 100%;
+    padding: 0 1rem;
     color: var(--element-color);
     font-size: 1rem;
-    height: calc(100% - 1px);
-    border: solid 3px var(--element-color);
-    text-align: center;
-    border-radius: 15px;
-    padding: 0 0.5rem;
     cursor: pointer;
+
+    /* Ligne de séparation verticale */
+    border-left: solid 3px var(--element-color);
 }
+
 
 .instance-select:before {
     transform: rotate(270deg);
