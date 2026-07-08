@@ -17,7 +17,10 @@ class database {
             databaseName: 'Databases',
             fileType: dev ? 'sqlite' : 'db',
             tableName: tableName,
-            path: `${await ipcRenderer.invoke('path-user-data')}${dev ? '../..' : '/databases'}`,
+            // NOTE: ne PAS utiliser "/databases" ici — c'est un dossier réservé de Chromium
+            // (ancien stockage WebSQL) que les versions récentes d'Electron purgent à chaque
+            // démarrage, ce qui effaçait la base (comptes, config) à chaque lancement.
+            path: `${await ipcRenderer.invoke('path-user-data')}${dev ? '../..' : '/launcher-data'}`,
             tableColumns: tableConfig,
         });
     }

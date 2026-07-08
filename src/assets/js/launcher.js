@@ -136,10 +136,20 @@ class Launcher {
         let account_selected = configClient ? configClient.account_selected : null
         let popupRefresh = new popup();
 
+        // Log de diagnostic temporaire -> %APPDATA%/Eracia-Launcher/launcher-debug.log
+        let debugLog = async (msg) => {
+            try {
+                let userData = await ipcRenderer.invoke('path-user-data');
+                fs.appendFileSync(`${userData}/launcher-debug.log`, `[${new Date().toISOString()}] ${msg}\n`);
+            } catch (e) { /* ignore */ }
+        }
+        await debugLog(`--- démarrage: ${accounts?.length || 0} compte(s), account_selected=${account_selected} ---`)
+
         if (accounts?.length) {
             for (let account of accounts) {
                 let account_ID = account.ID
                 if (account.error) {
+                    await debugLog(`compte "${account?.name}" supprimé: champ error présent -> ${JSON.stringify(account.error)}`)
                     await this.db.deleteData('accounts', account_ID)
                     continue
                 }
@@ -152,17 +162,20 @@ class Launcher {
                         background: false
                     });
 
+                    await debugLog(`Xbox "${account.name}": token expire dans ${Math.round(((account?.meta?.access_token_expires_in || 0) - Date.now()) / 60000)} min, refresh_token présent: ${!!account.refresh_token}`)
                     let refresh_accounts = await new Microsoft(this.config.client_id).refresh(account);
 
                     if (refresh_accounts.error) {
-                        await this.db.deleteData('accounts', account_ID)
-                        if (account_ID == account_selected) {
-                            configClient.account_selected = null
-                            await this.db.updateData('configClient', configClient)
-                        }
-                        console.error(`[Account] ${account.name}: ${refresh_accounts.errorMessage}`);
+                        // Un refresh raté (réseau, hoquet Microsoft, token temporairement invalide)
+                        // ne doit PAS supprimer le compte : on conserve le compte existant pour
+                        // ne pas forcer une reconnexion à chaque lancement.
+                        await debugLog(`Xbox "${account.name}": refresh ÉCHOUÉ -> ${JSON.stringify({ error: refresh_accounts.error, errorType: refresh_accounts.errorType, errorMessage: refresh_accounts.errorMessage, message: refresh_accounts.message })}`)
+                        console.error(`[Account] ${account.name}: refresh échoué (${refresh_accounts.errorType || 'inconnu'}) -> ${refresh_accounts.errorMessage || refresh_accounts.error}`);
+                        await addAccount(account)
+                        if (account_ID == account_selected) accountSelect(account)
                         continue;
                     }
+                    await debugLog(`Xbox "${account.name}": refresh OK`)
 
                     refresh_accounts.ID = account_ID
                     await this.db.updateData('accounts', refresh_accounts, account_ID)
@@ -227,6 +240,7 @@ class Launcher {
                     await addAccount(refresh_accounts)
                     if (account_ID == account_selected) accountSelect(refresh_accounts)
                 } else {
+                    await debugLog(`compte "${account?.name}" supprimé: type inconnu -> meta=${JSON.stringify(account?.meta)}`)
                     console.error(`[Account] ${account.name}: Account Type Not Found`);
                     this.db.deleteData('accounts', account_ID)
                     if (account_ID == account_selected) {

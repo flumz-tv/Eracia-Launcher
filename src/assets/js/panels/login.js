@@ -194,11 +194,22 @@ class Login {
     }
 
     async saveData(connectionData) {
-        let configClient = await this.db.readData('configClient');
-        let account = await this.db.createData('accounts', connectionData)
-        let instanceSelect = configClient.instance_selct
-        let instancesList = await config.getInstanceList()
-        configClient.account_selected = account.ID;
+        // Log de diagnostic temporaire -> %APPDATA%/Eracia-Launcher/launcher-debug.log
+        const fs = require('fs');
+        let debugLog = async (msg) => {
+            try {
+                let userData = await ipcRenderer.invoke('path-user-data');
+                fs.appendFileSync(`${userData}/launcher-debug.log`, `[${new Date().toISOString()}] ${msg}\n`);
+            } catch (e) { /* ignore */ }
+        }
+        try {
+            await debugLog(`login: sauvegarde du compte "${connectionData?.name}" (type=${connectionData?.meta?.type}, error=${JSON.stringify(connectionData?.error) || 'aucune'})`)
+            let configClient = await this.db.readData('configClient');
+            let account = await this.db.createData('accounts', connectionData)
+            await debugLog(`login: compte "${account?.name}" enregistré avec ID=${account?.ID}`)
+            let instanceSelect = configClient.instance_selct
+            let instancesList = await config.getInstanceList()
+            configClient.account_selected = account.ID;
 
         for (let instance of instancesList) {
             if (instance.whitelistActive) {
@@ -216,7 +227,12 @@ class Login {
         await this.db.updateData('configClient', configClient);
         await addAccount(account);
         await accountSelect(account);
+        await debugLog(`login: configClient mis à jour (account_selected=${configClient.account_selected}), passage au panel home`)
         changePanel('home');
+        } catch (err) {
+            await debugLog(`login: ERREUR pendant la sauvegarde -> ${err?.message || err}`)
+            throw err;
+        }
     }
 }
 export default Login;
