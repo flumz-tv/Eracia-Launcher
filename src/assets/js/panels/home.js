@@ -2,10 +2,32 @@
  * @author Luuxis
  * Luuxis License v1.0 (voir fichier LICENSE pour les détails en FR/EN)
  */
+const require = window.require;
+
 import { config, database, logger, changePanel, appdata, startStatusLoop, pkg, popup } from '../utils.js'
 
 const { Launch } = require('minecraft-java-core')
-const { shell, ipcRenderer } = require('electron')
+const { ipcRenderer } = require('electron')
+
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    }[char]));
+}
+
+function toSafeHttpUrl(value) {
+    if (typeof value !== 'string') return null;
+    try {
+        const parsed = new URL(value);
+        return ['https:', 'http:'].includes(parsed.protocol) ? parsed.toString() : null;
+    } catch {
+        return null;
+    }
+}
 
 class Home {
     static id = "home";
@@ -51,17 +73,17 @@ class Home {
                         <div class="news-header">
                             <img class="server-status-icon" src="assets/images/icon.png">
                             <div class="header-text">
-                                <div class="title">${News.title}</div>
+                                <div class="title">${escapeHtml(News.title)}</div>
                             </div>
                             <div class="date">
-                                <div class="day">${date.day}</div>
-                                <div class="month">${date.month}</div>
+                                <div class="day">${escapeHtml(date.day)}</div>
+                                <div class="month">${escapeHtml(date.month)}</div>
                             </div>
                         </div>
                         <div class="news-content">
                             <div class="bbWrapper">
-                                <p>${News.content.replace(/\n/g, '</br>')}</p>
-                                <p class="news-author">Auteur - <span>${News.author}</span></p>
+                                <p>${escapeHtml(News.content).replace(/\n/g, '<br>')}</p>
+                                <p class="news-author">Auteur - <span>${escapeHtml(News.author)}</span></p>
                             </div>
                         </div>`
                     newsElement.appendChild(blockNews);
@@ -94,8 +116,10 @@ class Home {
         let socials = document.querySelectorAll('.social-block')
 
         socials.forEach(social => {
-            social.addEventListener('click', e => {
-                shell.openExternal(e.target.dataset.url)
+            social.addEventListener('click', () => {
+                const safeUrl = toSafeHttpUrl(social.dataset.url);
+                if (!safeUrl) return;
+                ipcRenderer.send('open-external-url', safeUrl)
             })
         });
     }
@@ -173,17 +197,17 @@ class Home {
                         instance.whitelist.map(whitelist => {
                             if (whitelist == auth?.name) {
                                 if (instance.name == instanceSelect) {
-                                    instancesListPopup.innerHTML += `<div id="${instance.name}" class="instance-elements active-instance">${instance.name}</div>`
+                                    instancesListPopup.innerHTML += `<div id="${escapeHtml(instance.name)}" class="instance-elements active-instance">${escapeHtml(instance.name)}</div>`
                                 } else {
-                                    instancesListPopup.innerHTML += `<div id="${instance.name}" class="instance-elements">${instance.name}</div>`
+                                    instancesListPopup.innerHTML += `<div id="${escapeHtml(instance.name)}" class="instance-elements">${escapeHtml(instance.name)}</div>`
                                 }
                             }
                         })
                     } else {
                         if (instance.name == instanceSelect) {
-                            instancesListPopup.innerHTML += `<div id="${instance.name}" class="instance-elements active-instance">${instance.name}</div>`
+                            instancesListPopup.innerHTML += `<div id="${escapeHtml(instance.name)}" class="instance-elements active-instance">${escapeHtml(instance.name)}</div>`
                         } else {
-                            instancesListPopup.innerHTML += `<div id="${instance.name}" class="instance-elements">${instance.name}</div>`
+                            instancesListPopup.innerHTML += `<div id="${escapeHtml(instance.name)}" class="instance-elements">${escapeHtml(instance.name)}</div>`
                         }
                     }
                 }
@@ -297,14 +321,14 @@ class Home {
         });
 
         launch.on('progress', (progress, size) => {
-            infoStarting.innerHTML = `Téléchargement ${((progress / size) * 100).toFixed(0)}%`
+            infoStarting.textContent = `Téléchargement ${((progress / size) * 100).toFixed(0)}%`
             ipcRenderer.send('main-window-progress', { progress, size })
             progressBar.value = progress;
             progressBar.max = size;
         });
 
         launch.on('check', (progress, size) => {
-            infoStarting.innerHTML = `Vérification ${((progress / size) * 100).toFixed(0)}%`
+            infoStarting.textContent = `Vérification ${((progress / size) * 100).toFixed(0)}%`
             ipcRenderer.send('main-window-progress', { progress, size })
             progressBar.value = progress;
             progressBar.max = size;
@@ -324,7 +348,7 @@ class Home {
         launch.on('patch', patch => {
             console.log(patch);
             ipcRenderer.send('main-window-progress-load')
-            infoStarting.innerHTML = `Patch en cours...`
+            infoStarting.textContent = `Patch en cours...`
         });
 
         launch.on('data', (e) => {
@@ -334,7 +358,7 @@ class Home {
             };
             new logger('Minecraft', '#36b030');
             ipcRenderer.send('main-window-progress-load')
-            infoStarting.innerHTML = `Demarrage en cours...`
+            infoStarting.textContent = `Demarrage en cours...`
             console.log(e);
         })
 
@@ -345,7 +369,7 @@ class Home {
             ipcRenderer.send('main-window-progress-reset')
             infoStartingBOX.style.display = "none"
             playInstanceBTN.style.display = "flex"
-            infoStarting.innerHTML = `Vérification`
+            infoStarting.textContent = `Vérification`
             new logger(pkg.name, '#7289da');
             console.log('Close');
         });
@@ -366,7 +390,7 @@ class Home {
             ipcRenderer.send('main-window-progress-reset')
             infoStartingBOX.style.display = "none"
             playInstanceBTN.style.display = "flex"
-            infoStarting.innerHTML = `Vérification`
+            infoStarting.textContent = `Vérification`
             new logger(pkg.name, '#7289da');
             console.log(err);
         });

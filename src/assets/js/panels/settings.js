@@ -3,6 +3,8 @@
  * Luuxis License v1.0 (voir fichier LICENSE pour les détails en FR/EN)
  */
 
+const require = window.require;
+
 import { changePanel, accountSelect, database, Slider, config, setStatus, popup, appdata, setBackground } from '../utils.js'
 const { ipcRenderer } = require('electron');
 const os = require('os');

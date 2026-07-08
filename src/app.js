@@ -3,7 +3,7 @@
  * Luuxis License v1.0 (voir fichier LICENSE pour les détails en FR/EN)
  */
 
-const { app, ipcMain, nativeTheme } = require('electron');
+const { app, ipcMain, nativeTheme, shell } = require('electron');
 const { Microsoft } = require('minecraft-java-core');
 const { autoUpdater } = require('electron-updater')
 
@@ -14,6 +14,29 @@ const UpdateWindow = require("./assets/js/windows/updateWindow.js");
 const MainWindow = require("./assets/js/windows/mainWindow.js");
 
 let dev = process.env.NODE_ENV === 'dev';
+
+function isSafeExternalUrl(rawUrl) {
+    if (typeof rawUrl !== 'string') return false;
+    try {
+        const parsed = new URL(rawUrl);
+        return ['https:', 'http:'].includes(parsed.protocol);
+    } catch {
+        return false;
+    }
+}
+
+function secureWindow(window) {
+    if (!window) return;
+    const { webContents } = window;
+    webContents.setWindowOpenHandler(({ url }) => {
+        if (isSafeExternalUrl(url)) shell.openExternal(url);
+        return { action: 'deny' };
+    });
+    webContents.on('will-navigate', (event, url) => {
+        if (url !== webContents.getURL()) event.preventDefault();
+    });
+    webContents.session.setPermissionRequestHandler((_, __, callback) => callback(false));
+}
 
 if (dev) {
     let appPath = path.resolve('./data/Launcher').replace(/\\/g, '/');
@@ -26,13 +49,27 @@ if (dev) {
 
 if (!app.requestSingleInstanceLock()) app.quit();
 else app.whenReady().then(() => {
-    if (dev) return MainWindow.createWindow()
-    UpdateWindow.createWindow()
+    if (dev) {
+        MainWindow.createWindow();
+        secureWindow(MainWindow.getWindow());
+        return;
+    }
+    UpdateWindow.createWindow();
+    secureWindow(UpdateWindow.getWindow());
 });
 
-ipcMain.on('main-window-open', () => MainWindow.createWindow())
-ipcMain.on('main-window-dev-tools', () => MainWindow.getWindow().webContents.openDevTools({ mode: 'detach' }))
-ipcMain.on('main-window-dev-tools-close', () => MainWindow.getWindow().webContents.closeDevTools())
+ipcMain.on('main-window-open', () => {
+    MainWindow.createWindow();
+    secureWindow(MainWindow.getWindow());
+})
+ipcMain.on('main-window-dev-tools', () => {
+    if (!dev) return;
+    MainWindow.getWindow().webContents.openDevTools({ mode: 'detach' })
+})
+ipcMain.on('main-window-dev-tools-close', () => {
+    if (!dev) return;
+    MainWindow.getWindow().webContents.closeDevTools()
+})
 ipcMain.on('main-window-close', () => MainWindow.destroyWindow())
 ipcMain.on('main-window-reload', () => MainWindow.getWindow().reload())
 ipcMain.on('main-window-progress', (event, options) => MainWindow.getWindow().setProgressBar(options.progress / options.size))
@@ -41,13 +78,20 @@ ipcMain.on('main-window-progress-load', () => MainWindow.getWindow().setProgress
 ipcMain.on('main-window-minimize', () => MainWindow.getWindow().minimize())
 
 ipcMain.on('update-window-close', () => UpdateWindow.destroyWindow())
-ipcMain.on('update-window-dev-tools', () => UpdateWindow.getWindow().webContents.openDevTools({ mode: 'detach' }))
+ipcMain.on('update-window-dev-tools', () => {
+    if (!dev) return;
+    UpdateWindow.getWindow().webContents.openDevTools({ mode: 'detach' })
+})
 ipcMain.on('update-window-progress', (event, options) => UpdateWindow.getWindow().setProgressBar(options.progress / options.size))
 ipcMain.on('update-window-progress-reset', () => UpdateWindow.getWindow().setProgressBar(-1))
 ipcMain.on('update-window-progress-load', () => UpdateWindow.getWindow().setProgressBar(2))
 
 ipcMain.handle('path-user-data', () => app.getPath('userData'))
 ipcMain.handle('appData', e => app.getPath('appData'))
+ipcMain.on('open-external-url', (_, url) => {
+    if (!isSafeExternalUrl(url)) return;
+    shell.openExternal(url);
+})
 
 ipcMain.on('main-window-maximize', () => {
     if (MainWindow.getWindow().isMaximized()) {

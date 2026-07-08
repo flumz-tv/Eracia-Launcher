@@ -3,6 +3,8 @@
  * Luuxis License v1.0 (voir fichier LICENSE pour les détails en FR/EN)
  */
 
+const require = window.require;
+
 const { ipcRenderer } = require('electron');
 
 export default class popup {
@@ -18,9 +20,9 @@ export default class popup {
         this.popup.style.display = 'flex';
         if (info.background == false) this.popup.style.background = 'none';
         else this.popup.style.background = '#000000b3'
-        this.popupTitle.innerHTML = info.title;
+        this.popupTitle.textContent = info.title;
         this.popupContent.style.color = info.color ? info.color : '#e21212';
-        this.popupContent.innerHTML = info.content;
+        this.popupContent.textContent = info.content;
 
         if (info.options) this.popupOptions.style.display = 'flex';
 
@@ -34,8 +36,8 @@ export default class popup {
 
     closePopup() {
         this.popup.style.display = 'none';
-        this.popupTitle.innerHTML = '';
-        this.popupContent.innerHTML = '';
+        this.popupTitle.textContent = '';
+        this.popupContent.textContent = '';
         this.popupOptions.style.display = 'none';
     }
 }

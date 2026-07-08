@@ -3,6 +3,8 @@
  * Luuxis License v1.0 (voir fichier LICENSE pour les détails en FR/EN)
  */
 
+const require = window.require;
+
 const { ipcRenderer } = require('electron')
 const { Status } = require('minecraft-java-core')
 const fs = require('fs');
@@ -14,6 +16,16 @@ import logger from './utils/logger.js';
 import popup from './utils/popup.js';
 import { skin2D } from './utils/skin.js';
 import slider from './utils/slider.js';
+
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    }[char]));
+}
 
 async function setBackground(theme) {
     if (typeof theme == 'undefined') {
@@ -58,8 +70,8 @@ async function addAccount(data) {
     div.innerHTML = `
         <div class="profile-image" ${skin ? 'style="background-image: url(' + skin + ');"' : ''}></div>
         <div class="profile-infos">
-            <div class="profile-pseudo">${data.name}</div>
-            <div class="profile-uuid">${data.uuid}</div>
+            <div class="profile-pseudo">${escapeHtml(data.name)}</div>
+            <div class="profile-uuid">${escapeHtml(data.uuid)}</div>
         </div>
         <div class="delete-profile" id="${data.ID}">
             <div class="icon-account-delete delete-profile-icon"></div>
@@ -91,27 +103,27 @@ async function setStatus(opt) {
 
     if (!opt) {
         statusServerElement.classList.add('red')
-        statusServerElement.innerHTML = `Ferme - 0 ms`
+        statusServerElement.textContent = `Ferme - 0 ms`
         document.querySelector('.status-player-count').classList.add('red')
-        playersOnline.innerHTML = '0'
+        playersOnline.textContent = '0'
         return
     }
 
     let { ip, port, nameServer } = opt
-    nameServerElement.innerHTML = nameServer
+    nameServerElement.textContent = nameServer
     let status = new Status(ip, port);
     let statusServer = await status.getStatus().then(res => res).catch(err => err);
 
     if (!statusServer.error) {
         statusServerElement.classList.remove('red')
         document.querySelector('.status-player-count').classList.remove('red')
-        statusServerElement.innerHTML = `En ligne - ${statusServer.ms} ms`
-        playersOnline.innerHTML = statusServer.playersConnect
+        statusServerElement.textContent = `En ligne - ${statusServer.ms} ms`
+        playersOnline.textContent = String(statusServer.playersConnect)
     } else {
         statusServerElement.classList.add('red')
-        statusServerElement.innerHTML = `Ferme - 0 ms`
+        statusServerElement.textContent = `Ferme - 0 ms`
         document.querySelector('.status-player-count').classList.add('red')
-        playersOnline.innerHTML = '0'
+        playersOnline.textContent = '0'
     }
 }
 

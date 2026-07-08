@@ -7,6 +7,8 @@ import Login from './panels/login.js';
 import Home from './panels/home.js';
 import Settings from './panels/settings.js';
 
+const require = window.require;
+
 // import modules
 import { logger, config, changePanel, database, popup, setBackground, accountSelect, addAccount, pkg } from './utils.js';
 const { AZauth, Microsoft, Mojang } = require('minecraft-java-core');

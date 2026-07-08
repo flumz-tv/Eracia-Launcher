@@ -34,7 +34,10 @@ function createWindow() {
         show: false,
         webPreferences: {
             contextIsolation: false,
-            nodeIntegration: true
+            nodeIntegration: true,
+            webSecurity: true,
+            allowRunningInsecureContent: false,
+            webviewTag: false
         },
     });
     Menu.setApplicationMenu(null);

@@ -1,7 +1,7 @@
 {
     "name": "Eracia-Launcher",
     "preductname": "Eracia Launcher",
-    "version": "1.1.1",
+    "version": "1.1.2",
     "description": "Launcher Mincraft pour le serveur Eracia",
     "main": "src/app.js",
     "author": {
@@ -22,18 +22,22 @@
         "ignore": "**/test"
     },
     "dependencies": {
-        "electron-updater": "^6.1.8",
+        "electron-updater": "^6.8.9",
         "minecraft-java-core": "^4.2.3",
         "node-bdd": "^2.0.4",
         "node-fetch": "^2.7.0",
         "xml-js": "^1.6.11"
     },
+    "overrides": {
+        "tar": "^7.5.19",
+        "node-gyp": "^13.0.1"
+    },
     "devDependencies": {
         "cross-env": "^7.0.3",
-        "electron": "^30.5.1",
-        "electron-builder": "^26.0.12",
+        "electron": "^43.1.0",
+        "electron-builder": "^26.15.3",
         "javascript-obfuscator": "^4.1.0",
-        "jimp": "^0.22.12",
+        "jimp": "^1.6.1",
         "nodemon": "^3.1.2",
         "png2icons": "^2.0.1"
     },

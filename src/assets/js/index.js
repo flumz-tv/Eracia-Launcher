@@ -3,11 +3,33 @@
  * Luuxis License v1.0 (voir fichier LICENSE pour les détails en FR/EN)
  */
 
-const { ipcRenderer, shell } = require('electron');
+const require = window.require;
+
+const { ipcRenderer } = require('electron');
 const pkg = require('../package.json');
 const os = require('os');
 import { config, database } from './utils.js';
 const nodeFetch = require("node-fetch");
+
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    }[char]));
+}
+
+function toSafeHttpUrl(value) {
+    if (typeof value !== 'string') return null;
+    try {
+        const parsed = new URL(value);
+        return ['https:', 'http:'].includes(parsed.protocol) ? parsed.toString() : null;
+    } catch {
+        return null;
+    }
+}
 
 
 class Splash {
@@ -54,7 +76,7 @@ class Splash {
         this.setStatus(`Recherche de mise à jour...`);
 
         ipcRenderer.invoke('update-app').then().catch(err => {
-            return this.shutdown(`erreur lors de la recherche de mise à jour :<br>${err.message}`);
+            return this.shutdown(`erreur lors de la recherche de mise à jour :\n${err.message}`);
         });
 
         ipcRenderer.on('updateAvailable', () => {
@@ -105,9 +127,11 @@ class Splash {
         else if (os == 'linux') latest = this.getLatestReleaseForOS('linux', '.appimage', latestRelease);
 
 
-        this.setStatus(`Mise à jour disponible !<br><div class="download-update">Télécharger</div>`);
+        this.setStatus(`Mise à jour disponible !<br><div class="download-update">Télécharger</div>`, true);
         document.querySelector(".download-update").addEventListener("click", () => {
-            shell.openExternal(latest.browser_download_url);
+            const safeUrl = toSafeHttpUrl(latest?.browser_download_url);
+            if (!safeUrl) return this.shutdown("Lien de téléchargement invalide.");
+            ipcRenderer.send('open-external-url', safeUrl);
             return this.shutdown("Téléchargement en cours...");
         });
     }
@@ -119,7 +143,7 @@ class Splash {
             this.startLauncher();
         }).catch(e => {
             console.error(e);
-            return this.shutdown("Aucune connexion internet détectée,<br>veuillez réessayer ultérieurement.");
+            return this.shutdown("Aucune connexion internet détectée,\nveuillez réessayer ultérieurement.");
         })
     }
 
@@ -130,16 +154,20 @@ class Splash {
     }
 
     shutdown(text) {
-        this.setStatus(`${text}<br>Arrêt dans 5s`);
+        this.setStatus(`${text}\nArrêt dans 5s`);
         let i = 4;
         setInterval(() => {
-            this.setStatus(`${text}<br>Arrêt dans ${i--}s`);
+            this.setStatus(`${text}\nArrêt dans ${i--}s`);
             if (i < 0) ipcRenderer.send('update-window-close');
         }, 1000);
     }
 
-    setStatus(text) {
-        this.message.innerHTML = text;
+    setStatus(text, allowHtml = false) {
+        if (allowHtml) {
+            this.message.innerHTML = text;
+            return;
+        }
+        this.message.innerHTML = escapeHtml(text).replace(/\n/g, '<br>');
     }
 
     toggleProgress() {
