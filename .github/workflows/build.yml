@@ -30,6 +30,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     strategy:
+      fail-fast: false
       matrix:
         os: [macos-14, ubuntu-latest, windows-latest]
 
@@ -40,7 +41,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v3
         with:
-          node-version: 18.x
+          node-version: 22.x
 
       - name: Set up Python
         uses: actions/setup-python@v4
