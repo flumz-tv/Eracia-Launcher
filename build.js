@@ -102,15 +102,13 @@ class Index {
                     identity: null,
                     hardenedRuntime: false,
                     gatekeeperAssess: false,
-                    mergeASARs: true,
-                    singleArchFiles: "node_modules/sqlite3/**/*",
                     target: [{
                         target: "dmg",
-                        arch: "universal"
+                        arch: ["x64", "arm64"]
                     },
                     {
-                        target: "zip", 
-                        arch: "universal"
+                        target: "zip",
+                        arch: ["x64", "arm64"]
                     }]
                 },
                 dmg: {
